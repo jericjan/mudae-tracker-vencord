@@ -30,6 +30,8 @@ let trackedCharacters: {
 }[] = [];
 let widget: HTMLDivElement | null = null;
 
+let knownRanks: Record<string, number> = {};
+
 function createWidget() {
     if (widget) return;
 
@@ -97,6 +99,7 @@ function createWidget() {
     resetBtn.style.marginTop = "8px";
     resetBtn.onclick = () => {
         trackedCharacters = [];
+        knownRanks = {};        
         updateUI();
     };
 
@@ -122,10 +125,14 @@ function updateUI() {
         return;
     }
 
-    const bestRank = trackedCharacters[0].rank;
+    const knownRankChars = trackedCharacters.filter(c => c.rank > 0);
+    const bestRank = knownRankChars.length > 0 ? knownRankChars[0].rank : 0;
 
     trackedCharacters.forEach(char => {
-        const percentage = (bestRank / char.rank) * 100;
+        let percentage = 0;
+        if (char.rank > 0 && bestRank > 0) {
+            percentage = (bestRank / char.rank) * 100;
+        }
 
         const item = document.createElement("div");
         item.style.cursor = "pointer";
@@ -157,10 +164,17 @@ function updateUI() {
         bg.style.transition = "width 0.4s ease";
 
         const text = document.createElement("span");
-        text.innerText = `#${char.rank} - ${char.name}`;
+
+        const displayRank = char.rank > 0 ? `#${char.rank}` : `?`;
+        text.innerText = `${displayRank} - ${char.name}`;
         text.style.fontWeight = "bold";
         text.style.fontSize = "14px";
         text.style.textShadow = "1px 1px 2px rgba(0,0,0,0.8)";
+        
+        if (char.rank === 0) {
+            text.style.opacity = "0.7";
+            text.style.fontStyle = "italic";
+        }
         
         const emojiContainer = document.createElement("div");
         emojiContainer.style.display = "flex";
@@ -219,35 +233,52 @@ function onMessageCreate(action: any) {
             const rankValue = rankMatch ? parseInt(rankMatch[1].replace(/,/g, ""), 10): 0;            
 
             const charName = embed.author?.name || "Unknown Character";
-            const guildId = message.guild_id;
-            const channelId = message.channel_id;
-            const messageId = message.id;
 
-            const emojiUrls: string[] =[];
-            if (message.components?.length > 0) {
-                for (const row of message.components) {
-                    if (row.components?.length > 0) {
-                        for (const component of row.components) {
-                            if (component.emoji?.id) {
-                                emojiUrls.push(`https://cdn.discordapp.com/emojis/${component.emoji.id}.webp?size=44`);
+            if (rankValue > 0) {
+                knownRanks[charName] = rankValue;
+            }
+
+            const finalRank = rankValue > 0 ? rankValue : (knownRanks[charName] || 0);
+
+            const existingChar = trackedCharacters.find(c => c.name === charName);
+
+            if (existingChar) {
+                if (existingChar.rank === 0 && finalRank > 0) {
+                    existingChar.rank = finalRank;
+                    logger.info(`Updated unknown rank for ${charName} to #${finalRank}`);
+                }
+            } else {
+                const emojiUrls: string[] =[];
+                if (message.components?.length > 0) {
+                    for (const row of message.components) {
+                        if (row.components?.length > 0) {
+                            for (const component of row.components) {
+                                if (component.emoji?.id) {
+                                    emojiUrls.push(`https://cdn.discordapp.com/emojis/${component.emoji.id}.webp?size=44`);
+                                }
                             }
                         }
                     }
                 }
+
+                trackedCharacters.push({
+                    name: charName,
+                    rank: finalRank,
+                    messageId: message.id,
+                    channelId: message.channel_id,
+                    guildId: message.guild_id,
+                    emojiUrls
+                });
+                
+                logger.info(`Tracked ${charName} at Rank ${finalRank > 0 ? '#' + finalRank : 'Unknown'}`);
             }
 
-            trackedCharacters.push({
-                name: charName,
-                rank: rankValue,
-                messageId,
-                channelId,
-                guildId,
-                emojiUrls
+            trackedCharacters.sort((a, b) => {
+                if (a.rank === 0 && b.rank !== 0) return 1;
+                if (b.rank === 0 && a.rank !== 0) return -1;
+                return a.rank - b.rank;
             });
 
-            trackedCharacters.sort((a, b) => a.rank - b.rank);
-
-            logger.info(`Tracked ${charName} at Rank #${rankValue}`);
             updateUI();
         }
     } catch (error) {
@@ -280,5 +311,6 @@ export default definePlugin({
             widget = null;
         }
         trackedCharacters = [];
+        knownRanks = {};
     }
 });
