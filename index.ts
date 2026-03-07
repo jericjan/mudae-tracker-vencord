@@ -214,8 +214,9 @@ function onMessageCreate(action: any) {
         const footer = embed.footer?.text;
         if (footer?.includes("Belongs to")) return;
 
-        if (rankMatch) {
-            const rankValue = parseInt(rankMatch[1].replace(/,/g, ""), 10);
+        if (rankMatch || embed.description.includes("React with any emoji")) {
+            // 0 = unknown claim rank
+            const rankValue = rankMatch ? parseInt(rankMatch[1].replace(/,/g, ""), 10): 0;            
 
             const charName = embed.author?.name || "Unknown Character";
             const guildId = message.guild_id;
