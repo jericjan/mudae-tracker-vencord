@@ -7,7 +7,7 @@
 import { definePluginSettings } from "@api/Settings";
 import { Logger } from "@utils/Logger";
 import definePlugin, { OptionType } from "@utils/types";
-import { FluxDispatcher, SelectedChannelStore } from "@webpack/common";
+import { FluxDispatcher, NavigationRouter,SelectedChannelStore } from "@webpack/common";
 
 const logger = new Logger("Mudae Tracker");
 
@@ -20,7 +20,13 @@ const settings = definePluginSettings({
     }
 });
 
-let trackedCharacters: { name: string; rank: number; }[] = [];
+let trackedCharacters: {
+    name: string;
+    rank: number;
+    messageId: string;
+    channelId: string;
+    guildId: string;
+}[] = [];
 let widget: HTMLDivElement | null = null;
 
 function createWidget() {
@@ -121,6 +127,12 @@ function updateUI() {
         const percentage = (bestRank / char.rank) * 100;
 
         const item = document.createElement("div");
+        item.style.cursor = "pointer";
+        item.title = "Click to jump to message";
+        item.onclick = () => {
+            jumpToMessage(char.guildId, char.channelId, char.messageId);
+        };
+
         item.style.position = "relative";
         item.style.marginBottom = "6px";
         item.style.padding = "6px 8px";
@@ -163,6 +175,10 @@ function checkVisibility() {
     }
 }
 
+function jumpToMessage(guildId: string, channelId: string, messageId: string) {
+    NavigationRouter.transitionTo(`/channels/${guildId}/${channelId}/${messageId}`);
+}
+
 function onMessageCreate(action: any) {
     try {
         if (action.type !== "MESSAGE_CREATE") return;
@@ -182,8 +198,16 @@ function onMessageCreate(action: any) {
             const rankValue = parseInt(rankMatch[1].replace(/,/g, ""), 10);
 
             const charName = embed.author?.name || "Unknown Character";
-
-            trackedCharacters.push({ name: charName, rank: rankValue });
+            const guildId = message.guild_id;
+            const channelId = message.channel_id;
+            const messageId = message.id;
+            trackedCharacters.push({
+                name: charName,
+                rank: rankValue,
+                messageId,
+                channelId,
+                guildId
+            });
 
             trackedCharacters.sort((a, b) => a.rank - b.rank);
 
