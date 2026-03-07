@@ -27,6 +27,7 @@ let trackedCharacters: {
     channelId: string;
     guildId: string;
     emojiUrls: string[];
+    claimed: boolean;
 }[] = [];
 let widget: HTMLDivElement | null = null;
 
@@ -166,7 +167,7 @@ function updateUI() {
         const text = document.createElement("span");
 
         const displayRank = char.rank > 0 ? `#${char.rank}` : `?`;
-        text.innerText = `${displayRank} - ${char.name}`;
+        text.innerText = (char.claimed ? "❌" : "") + `${displayRank} - ${char.name}`;
         text.style.fontWeight = "bold";
         text.style.fontSize = "14px";
         text.style.textShadow = "1px 1px 2px rgba(0,0,0,0.8)";
@@ -226,7 +227,6 @@ function onMessageCreate(action: any) {
         // logger.info("Embed:", embed);
         const rankMatch = embed.description.match(/(?:Claim Rank:|Claims:)\s*#([0-9,]+)/i);
         const footer = embed.footer?.text;
-        if (footer?.includes("Belongs to")) return;
 
         if (rankMatch || embed.description.includes("React with any emoji")) {
             // 0 = unknown claim rank
@@ -267,7 +267,8 @@ function onMessageCreate(action: any) {
                     messageId: message.id,
                     channelId: message.channel_id,
                     guildId: message.guild_id,
-                    emojiUrls
+                    emojiUrls,
+                    claimed: footer?.includes("Belongs to")
                 });
                 
                 logger.info(`Tracked ${charName} at Rank ${finalRank > 0 ? '#' + finalRank : 'Unknown'}`);
