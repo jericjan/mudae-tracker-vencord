@@ -175,8 +175,8 @@ function onMessageCreate(action: any) {
         if (!embed || !embed.description) return;
         // logger.info("Embed:", embed);
         const rankMatch = embed.description.match(/(?:Claim Rank:|Claims:)\s*#([0-9,]+)/i);
-        const footer = embed.footer.text;
-        if (footer.includes("Belongs to")) return;
+        const footer = embed.footer?.text;
+        if (footer?.includes("Belongs to")) return;
 
         if (rankMatch) {
             const rankValue = parseInt(rankMatch[1].replace(/,/g, ""), 10);
