@@ -7,7 +7,7 @@
 import { definePluginSettings } from "@api/Settings";
 import { Logger } from "@utils/Logger";
 import definePlugin, { OptionType } from "@utils/types";
-import { FluxDispatcher, NavigationRouter,SelectedChannelStore } from "@webpack/common";
+import { FluxDispatcher, NavigationRouter, SelectedChannelStore } from "@webpack/common";
 
 const logger = new Logger("Mudae Tracker");
 
@@ -26,6 +26,7 @@ let trackedCharacters: {
     messageId: string;
     channelId: string;
     guildId: string;
+    emojiUrls: string[];
 }[] = [];
 let widget: HTMLDivElement | null = null;
 
@@ -133,6 +134,10 @@ function updateUI() {
             jumpToMessage(char.guildId, char.channelId, char.messageId);
         };
 
+        item.style.display = "flex";
+        item.style.justifyContent = "space-between";
+        item.style.alignItems = "center";
+        
         item.style.position = "relative";
         item.style.marginBottom = "6px";
         item.style.padding = "6px 8px";
@@ -156,9 +161,24 @@ function updateUI() {
         text.style.fontWeight = "bold";
         text.style.fontSize = "14px";
         text.style.textShadow = "1px 1px 2px rgba(0,0,0,0.8)";
+        
+        const emojiContainer = document.createElement("div");
+        emojiContainer.style.display = "flex";
+        emojiContainer.style.gap = "4px";
+        emojiContainer.style.zIndex = "1";
+
+        char.emojiUrls.forEach(url => {
+            const img = document.createElement("img");
+            img.src = url;
+            img.style.width = "18px";
+            img.style.height = "18px";
+            img.style.objectFit = "contain";
+            emojiContainer.appendChild(img);
+        });
 
         item.appendChild(bg);
         item.appendChild(text);
+        item.appendChild(emojiContainer);
         content.appendChild(item);
     });
 }
@@ -201,12 +221,27 @@ function onMessageCreate(action: any) {
             const guildId = message.guild_id;
             const channelId = message.channel_id;
             const messageId = message.id;
+
+            const emojiUrls: string[] =[];
+            if (message.components?.length > 0) {
+                for (const row of message.components) {
+                    if (row.components?.length > 0) {
+                        for (const component of row.components) {
+                            if (component.emoji?.id) {
+                                emojiUrls.push(`https://cdn.discordapp.com/emojis/${component.emoji.id}.webp?size=44`);
+                            }
+                        }
+                    }
+                }
+            }
+
             trackedCharacters.push({
                 name: charName,
                 rank: rankValue,
                 messageId,
                 channelId,
-                guildId
+                guildId,
+                emojiUrls
             });
 
             trackedCharacters.sort((a, b) => a.rank - b.rank);
