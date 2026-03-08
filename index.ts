@@ -131,7 +131,7 @@ function updateUI() {
 
     trackedCharacters.forEach(char => {
         let percentage = 0;
-        if (char.rank > 0 && bestRank > 0) {
+        if (char.rank > 0 && bestRank > 0 && !char.claimed) {
             percentage = (bestRank / char.rank) * 100;
         }
 
