@@ -126,7 +126,7 @@ function updateUI() {
         return;
     }
 
-    const knownRankChars = trackedCharacters.filter(c => c.rank > 0);
+    const knownRankChars = trackedCharacters.filter(c => c.rank > 0 && !c.claimed);
     const bestRank = knownRankChars.length > 0 ? knownRankChars[0].rank : 0;
 
     trackedCharacters.forEach(char => {
@@ -277,6 +277,8 @@ function onMessageCreate(action: any) {
             trackedCharacters.sort((a, b) => {
                 if (a.rank === 0 && b.rank !== 0) return 1;
                 if (b.rank === 0 && a.rank !== 0) return -1;
+                if (a.claimed === true && b.claimed === false) return 1;
+                if (a.claimed === false && b.claimed === true) return -1;
                 return a.rank - b.rank;
             });
 
