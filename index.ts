@@ -20,6 +20,8 @@ const settings = definePluginSettings({
     }
 });
 
+const headerTxt = "Mudae Tracker";
+
 let trackedCharacters: {
     name: string;
     rank: number;
@@ -32,6 +34,9 @@ let trackedCharacters: {
 let widget: HTMLDivElement | null = null;
 
 let knownRanks: Record<string, number> = {};
+
+let currentPower: number = -1;
+let powerUsage: number = -1;
 
 function createWidget() {
     if (widget) return;
@@ -50,7 +55,8 @@ function createWidget() {
     widget.style.display = "none";
 
     const header = document.createElement("div");
-    header.innerText = "Mudae Tracker";
+    header.id = "mudae-tracker-header";
+    header.innerText = headerTxt;
     header.style.padding = "10px";
     header.style.cursor = "grab";
     header.style.fontWeight = "bold";
@@ -100,7 +106,9 @@ function createWidget() {
     resetBtn.style.marginTop = "8px";
     resetBtn.onclick = () => {
         trackedCharacters = [];
-        knownRanks = {};        
+        knownRanks = {};     
+        currentPower = -1;
+        powerUsage = -1;           
         updateUI();
     };
 
@@ -116,6 +124,15 @@ function updateUI() {
     if (!widget) return;
     const content = widget.querySelector("#mudae-tracker-content") as HTMLDivElement;
     if (!content) return;
+    const header =  widget.querySelector("#mudae-tracker-header") as HTMLDivElement;
+    if (!header) return;
+
+    if (powerUsage != -1 && currentPower != -1) {
+        const reactCount = Math.floor(currentPower / powerUsage);
+        header.innerHTML = headerTxt + ` | ${reactCount} reacts`;
+    } else {
+        header.innerHTML = headerTxt;
+    }
 
     content.innerHTML = "";
 
@@ -222,6 +239,16 @@ function onMessageCreate(action: any) {
         const { message } = action;
         if (!message || !allowedIds.includes(message.channel_id)) return;
 
+        const content = message.content;
+        const pwrMatch = content?.match(/Power: \*\*(\d+)%\*\*/);
+        const pwrUsage = content?.match(/Each kakera button consumes (\d+)% of your reaction power\./);
+        if (pwrMatch && pwrUsage) {
+            currentPower = parseInt(pwrMatch[1]);
+            powerUsage = parseInt(pwrUsage[1]);
+            updateUI();
+            return;
+        }
+
         const embed = message.embeds?.[0];
         if (!embed || !embed.description) return;
         // logger.info("Embed:", embed);
@@ -315,5 +342,7 @@ export default definePlugin({
         }
         trackedCharacters = [];
         knownRanks = {};
+        currentPower = -1;
+        powerUsage = -1;
     }
 });
