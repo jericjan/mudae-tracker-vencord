@@ -17,6 +17,12 @@ const settings = definePluginSettings({
         default: "",
         description: "Comma-separated list of Channel IDs to track (e.g. 12345678, 87654321)",
         name: "Tracked Channels",
+    },
+    reactTimeouts: {
+        type: OptionType.STRING,
+        default: "",
+        description: "Per-server timeouts in seconds. Format: GuildID:Seconds (e.g. 12345678:30, 87654321:60). Default is 45s.",
+        name: "React Timeouts",
     }
 });
 
@@ -30,6 +36,7 @@ let trackedCharacters: {
     guildId: string;
     emojiUrls: string[];
     claimed: boolean;
+    expiresAt: number;
 }[] = [];
 let widget: HTMLDivElement | null = null;
 
@@ -37,6 +44,27 @@ let knownRanks: Record<string, number> = {};
 
 let currentPower: number = -1;
 let powerUsage: number = -1;
+
+let uiInterval: NodeJS.Timeout | null = null;
+
+function getTimeoutSecs(guildId: string, hasInteraction: boolean): number {
+    let timeout = 45;
+    const rawSettings = settings.store.reactTimeouts || "";
+    
+    if (rawSettings) {
+        const pairs = rawSettings.split(",").map(s => s.trim());
+        for (const pair of pairs) {
+            const[id, val] = pair.split(":");
+            if (id === guildId && val) {
+                const parsed = parseInt(val, 10);
+                if (!isNaN(parsed)) timeout = parsed;
+                break;
+            }
+        }
+    }
+
+    return hasInteraction ? timeout * 2 : timeout;
+}
 
 function createWidget() {
     if (widget) return;
@@ -182,9 +210,8 @@ function updateUI() {
         bg.style.transition = "width 0.4s ease";
 
         const text = document.createElement("span");
-
-        const displayRank = char.rank > 0 ? `#${char.rank}` : `?`;
-        text.innerText = (char.claimed ? "❌" : "") + `${displayRank} - ${char.name}`;
+        
+        text.id = `mudae-text-${char.messageId}`;
         text.style.fontWeight = "bold";
         text.style.fontSize = "14px";
         text.style.textShadow = "1px 1px 2px rgba(0,0,0,0.8)";
@@ -212,6 +239,24 @@ function updateUI() {
         item.appendChild(text);
         item.appendChild(emojiContainer);
         content.appendChild(item);
+    });
+
+    updateTimers();
+}
+
+function updateTimers() {
+    if (!widget) return;
+    
+    trackedCharacters.forEach(char => {
+        const span = widget!.querySelector(`#mudae-text-${char.messageId}`) as HTMLSpanElement;
+        if (span) {
+            const timeLeft = Math.max(0, Math.ceil((char.expiresAt - Date.now()) / 1000));
+            const timerText = ` | ${timeLeft}s`;
+            
+            const displayRank = char.rank > 0 ? `#${char.rank}` : `?`;
+            
+            span.innerText = (char.claimed ? "❌" : "") + `${displayRank} - ${char.name}${timerText}`;
+        }
     });
 }
 
@@ -288,6 +333,9 @@ function onMessageCreate(action: any) {
                     }
                 }
 
+                const hasInteraction = !!message.interaction;
+                const timeoutSecs = getTimeoutSecs(message.guild_id, hasInteraction);
+
                 trackedCharacters.push({
                     name: charName,
                     rank: finalRank,
@@ -295,10 +343,11 @@ function onMessageCreate(action: any) {
                     channelId: message.channel_id,
                     guildId: message.guild_id,
                     emojiUrls,
-                    claimed: footer?.includes("Belongs to")
+                    claimed: !!footer?.includes("Belongs to"),
+                    expiresAt: Date.now() + (timeoutSecs * 1000)
                 });
                 
-                logger.info(`Tracked ${charName} at Rank ${finalRank > 0 ? '#' + finalRank : 'Unknown'}`);
+                logger.info(`Tracked ${charName} at Rank ${finalRank > 0 ? '#' + finalRank : 'Unknown'} with ${timeoutSecs}s timeout`);
             }
 
             trackedCharacters.sort((a, b) => {
@@ -329,12 +378,19 @@ export default definePlugin({
         FluxDispatcher.subscribe("CHANNEL_SELECT", checkVisibility);
 
         checkVisibility();
+
+        uiInterval = setInterval(updateTimers, 1000);
     },
     stop() {
         logger.info("Stopping Mudae Tracker.");
 
         FluxDispatcher.unsubscribe("MESSAGE_CREATE", onMessageCreate);
         FluxDispatcher.unsubscribe("CHANNEL_SELECT", checkVisibility);
+
+        if (uiInterval) {
+            clearInterval(uiInterval);
+            uiInterval = null;
+        }
 
         if (widget) {
             widget.remove();
