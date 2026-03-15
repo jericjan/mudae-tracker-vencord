@@ -75,9 +75,8 @@ function createWidget() {
     widget.style.top = "60px";
     widget.style.right = "60px";
     widget.style.width = "280px";
-    widget.style.backgroundColor = "#7d75fd47";
-    widget.style.border = "1px solid var(--border-subtle)";
-    widget.style.borderRadius = "8px";
+    widget.style.backgroundColor = "rgba(170, 217, 255, 0.75)";
+    widget.style.borderRadius = "0px 0px 8px 8px";
     widget.style.boxShadow = "0 4px 10px rgba(0,0,0,0.3)";
     widget.style.zIndex = "9999";
     widget.style.display = "none";
@@ -127,7 +126,7 @@ function createWidget() {
     resetBtn.style.width = "100%";
     resetBtn.style.padding = "6px";
     resetBtn.style.color = "white";
-    resetBtn.style.backgroundColor = "#bf27276b";
+    resetBtn.style.backgroundColor = "rgba(113,12,20,0.75)";
     resetBtn.style.border = "none";
     resetBtn.style.borderRadius = "4px";
     resetBtn.style.cursor = "pointer";
@@ -205,7 +204,7 @@ function updateUI() {
         bg.style.left = "0";
         bg.style.height = "100%";
         bg.style.width = `${percentage}%`;
-        bg.style.backgroundColor = "rgba(88, 101, 242, 0.4)";
+        bg.style.backgroundColor = "rgb(182 224 255)";
         bg.style.zIndex = "-1";
         bg.style.transition = "width 0.4s ease";
 
