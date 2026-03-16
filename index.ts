@@ -122,7 +122,7 @@ function createWidget() {
     content.style.overflowY = "auto";
 
     const resetBtn = document.createElement("button");
-    resetBtn.innerText = "Reset Rankings";
+    resetBtn.innerText = "Clear All";
     resetBtn.style.width = "100%";
     resetBtn.style.padding = "6px";
     resetBtn.style.color = "white";
@@ -156,9 +156,9 @@ function updateUI() {
 
     if (powerUsage != -1 && currentPower != -1) {
         const reactCount = Math.floor(currentPower / powerUsage);
-        header.innerHTML = headerTxt + ` | ${reactCount} reacts`;
+        header.textContent  = headerTxt + ` | ${reactCount} reacts`;
     } else {
-        header.innerHTML = headerTxt;
+        header.textContent  = headerTxt;
     }
 
     content.innerHTML = "";
