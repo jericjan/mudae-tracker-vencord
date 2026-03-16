@@ -281,7 +281,8 @@ function onMessageCreate(action: any) {
 
         const allowedIds = settings.store.channelIds.split(",").map(id => id.trim());
         const { message } = action;
-        if (!message || !allowedIds.includes(message.channel_id)) return;
+        const currentChannelId = SelectedChannelStore.getChannelId();
+        if (!message || !allowedIds.includes(message.channel_id) || message.channel_id != currentChannelId) return;
 
         const content = message.content;
         const pwrMatch = content?.match(/Power: \*\*(\d+)%\*\*/);
