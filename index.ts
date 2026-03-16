@@ -76,7 +76,7 @@ function createWidget() {
     widget.style.right = "60px";
     widget.style.width = "280px";
     widget.style.backgroundColor = "rgba(170, 217, 255, 0.75)";
-    widget.style.borderRadius = "0px 0px 8px 8px";
+    widget.style.borderRadius = "8px 8px 8px 8px";
     widget.style.boxShadow = "0 4px 10px rgba(0,0,0,0.3)";
     widget.style.zIndex = "9999";
     widget.style.display = "none";
@@ -128,7 +128,7 @@ function createWidget() {
     resetBtn.style.color = "white";
     resetBtn.style.backgroundColor = "rgba(113,12,20,0.75)";
     resetBtn.style.border = "none";
-    resetBtn.style.borderRadius = "4px";
+    resetBtn.style.borderRadius = "0px 0px 8px 8px";
     resetBtn.style.cursor = "pointer";
     resetBtn.style.marginTop = "8px";
     resetBtn.onclick = () => {
